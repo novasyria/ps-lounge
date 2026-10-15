@@ -1,0 +1,795 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#0f172a">
+<title>Ø¥Ø¯Ø§Ø±Ø© ØµØ§Ù„Ø© Ø§Ù„Ø¨Ù„Ø§ÙŠØ³ØªÙŠØ´Ù†</title>
+<style>
+  :root{
+    --bg:#0f172a;
+    --card:#1e293b;
+    --card2:#273449;
+    --line:#334155;
+    --text:#f1f5f9;
+    --muted:#94a3b8;
+    --green:#22c55e;
+    --blue:#3b82f6;
+    --orange:#f59e0b;
+    --red:#ef4444;
+    --gold:#eab308;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  body{
+    margin:0;font-family:"Segoe UI",Tahoma,Arial,sans-serif;
+    background:var(--bg);color:var(--text);min-height:100vh;
+    -webkit-user-select:none;user-select:none;
+  }
+  header{
+    display:flex;align-items:center;justify-content:space-between;
+    padding:14px 16px;background:#111c33;border-bottom:1px solid var(--line);
+    position:sticky;top:0;z-index:20;
+  }
+  header h1{font-size:19px;margin:0;font-weight:700}
+  header .clock{font-size:15px;color:var(--muted);font-variant-numeric:tabular-nums;font-weight:700}
+
+  .stats{
+    display:flex;gap:8px;padding:12px 16px 4px;
+  }
+  .stat{
+    flex:1;background:var(--card);border:1px solid var(--line);
+    border-radius:14px;padding:10px 12px;text-align:center;
+  }
+  .stat .n{font-size:22px;font-weight:800}
+  .stat .l{font-size:12px;color:var(--muted);margin-top:2px}
+
+  .grid{
+    display:grid;gap:12px;padding:8px 16px 130px;
+    grid-template-columns:repeat(auto-fill,minmax(230px,1fr));
+  }
+
+  .screen{
+    background:var(--card);border:2px solid var(--line);border-radius:18px;
+    padding:14px;position:relative;transition:.2s;
+  }
+  .screen.busy{border-color:var(--blue)}
+  .screen.warn{border-color:var(--orange)}
+  .screen.over{border-color:var(--red);animation:pulse 1s infinite}
+  @keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(239,68,68,.5)}50%{box-shadow:0 0 0 8px rgba(239,68,68,0)}}
+
+  .sc-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
+  .sc-name{font-size:17px;font-weight:800}
+  .badge{font-size:11px;padding:3px 10px;border-radius:20px;font-weight:700}
+  .badge.free{background:#14532d;color:#86efac}
+  .badge.busy{background:#1e3a8a;color:#93c5fd}
+  .badge.over{background:#7f1d1d;color:#fca5a5}
+  .badge.paid{background:#14532d;color:#86efac}
+
+  .timer{
+    font-size:34px;font-weight:800;text-align:center;font-variant-numeric:tabular-nums;
+    letter-spacing:1px;margin:6px 0;
+  }
+  .timer.free{color:var(--muted);font-size:20px}
+  .timer.over{color:var(--red)}
+
+  .row{display:flex;justify-content:space-between;font-size:13px;color:var(--muted);margin:3px 0}
+  .row b{color:var(--text);font-weight:600}
+
+  .orders{margin-top:8px;border-top:1px dashed var(--line);padding-top:8px}
+  .orders .o{display:flex;justify-content:space-between;font-size:13px;margin:2px 0}
+  .orders .empty{font-size:12px;color:#64748b}
+
+  .total-line{
+    display:flex;justify-content:space-between;font-size:15px;font-weight:700;
+    margin-top:8px;padding-top:8px;border-top:1px solid var(--line);
+  }
+  .due{margin-top:4px;font-size:13px;font-weight:700;color:var(--orange);text-align:center}
+  .paid-ok{margin-top:4px;font-size:13px;font-weight:700;color:var(--green);text-align:center}
+
+  .btns{display:flex;gap:6px;margin-top:10px;flex-wrap:wrap}
+  button{
+    font-family:inherit;cursor:pointer;border:none;border-radius:10px;
+    padding:9px 10px;font-size:13px;font-weight:700;color:#fff;
+    background:var(--card2);flex:1;min-width:0;transition:.15s;
+  }
+  button:active{transform:scale(.95)}
+  .b-blue{background:var(--blue)}
+  .b-green{background:var(--green)}
+  .b-orange{background:var(--orange)}
+  .b-red{background:var(--red)}
+  .b-ghost{background:transparent;border:1px solid var(--line)}
+
+  /* Bottom bar */
+  .bottombar{
+    position:fixed;bottom:0;left:0;right:0;z-index:30;
+    display:flex;align-items:center;gap:10px;
+    padding:12px 16px calc(12px + env(safe-area-inset-bottom));
+    background:linear-gradient(to top, rgba(15,23,42,.98), rgba(15,23,42,.85));
+    border-top:1px solid var(--line);
+  }
+  .iconbtn{
+    background:var(--card2);border:1px solid var(--line);color:var(--text);
+    width:50px;height:50px;min-width:50px;border-radius:14px;font-size:22px;cursor:pointer;
+    display:flex;align-items:center;justify-content:center;flex:0 0 auto;
+  }
+  .iconbtn:active{transform:scale(.94)}
+  .fab{
+    flex:1;background:var(--green);color:#fff;border-radius:14px;padding:15px 18px;
+    font-size:16px;font-weight:800;box-shadow:0 6px 18px rgba(34,197,94,.35);
+  }
+
+  /* Modal */
+  .overlay{
+    position:fixed;inset:0;background:rgba(0,0,0,.65);display:none;
+    align-items:flex-end;justify-content:center;z-index:50;backdrop-filter:blur(3px);
+  }
+  .overlay.show{display:flex}
+  .sheet{
+    background:var(--card);width:100%;max-width:520px;max-height:92vh;overflow-y:auto;
+    border-radius:22px 22px 0 0;padding:20px;animation:up .25s ease;
+  }
+  @keyframes up{from{transform:translateY(100%)}to{transform:translateY(0)}}
+  .sheet h2{margin:0 0 14px;font-size:19px}
+  label{display:block;font-size:13px;color:var(--muted);margin:12px 0 6px}
+  input,select{
+    width:100%;padding:12px;border-radius:12px;border:1px solid var(--line);
+    background:var(--card2);color:var(--text);font-size:16px;font-family:inherit;
+  }
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .chips{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
+  .chip{
+    background:var(--card2);border:1px solid var(--line);border-radius:20px;
+    padding:8px 12px;font-size:13px;cursor:pointer;display:flex;flex-direction:column;
+    align-items:center;min-width:74px;
+  }
+  .chip.on{border-color:var(--blue);background:#1e3a8a}
+  .chip .p{font-size:12px;color:var(--gold);font-weight:700;margin-top:2px}
+  .costline{font-size:14px;color:var(--gold);font-weight:700;margin-top:8px;text-align:center}
+  .saved{color:var(--green);font-size:13px;text-align:center;height:16px;margin-top:6px}
+
+  .ord-row{display:flex;gap:6px;align-items:center;margin-bottom:6px}
+  .ord-row input{padding:8px;font-size:14px}
+
+  .switch{display:flex;gap:8px;margin-top:6px}
+  .switch .opt{
+    flex:1;text-align:center;padding:10px;border-radius:12px;background:var(--card2);
+    border:1px solid var(--line);cursor:pointer;font-weight:600;font-size:14px;
+  }
+  .switch .opt.active{background:var(--blue);border-color:var(--blue)}
+</style>
+</head>
+<body>
+
+<header>
+  <div style="display:flex;align-items:center;gap:8px">
+    <span id="syncDot" title="Ø­Ø§Ù„Ø© Ø§Ù„Ù…Ø²Ø§Ù…Ù†Ø©" style="width:10px;height:10px;border-radius:50%;background:#64748b;display:inline-block"></span>
+    <span id="syncTxt" style="font-size:11px;color:var(--muted)">Ø¬Ø§Ø±ÙŠ Ø§Ù„Ø§ØªØµØ§Ù„</span>
+  </div>
+  <h1 id="brand">ØµØ§Ù„Ø© Ø§Ù„Ø¨Ù„Ø§ÙŠØ³ØªÙŠØ´Ù†</h1>
+  <div class="clock" id="clock"></div>
+</header>
+
+<div class="stats">
+  <div class="stat"><div class="n" id="sBusy">0</div><div class="l">Ù…Ø´ØºÙˆÙ„Ø© Ø§Ù„Ø¢Ù†</div></div>
+  <div class="stat"><div class="n" id="sFree">0</div><div class="l">ÙØ§Ø¶ÙŠØ©</div></div>
+  <div class="stat"><div class="n" id="sUnpaid">0</div><div class="l">ØºÙŠØ± Ù…Ø¯ÙÙˆØ¹ (Ù„.Ø³)</div></div>
+</div>
+
+<div class="grid" id="grid"></div>
+
+<div class="bottombar">
+  <button class="iconbtn" onclick="openSettings()">&#9881;</button>
+  <button class="fab" onclick="openStart(null)">+ Ø§Ø¨Ø¯Ø£ Ø¬Ù„Ø³Ø©</button>
+  <button class="iconbtn" onclick="toggleSound()" id="soundBtn">&#128266;</button>
+</div>
+
+<!-- ===== Start Modal ===== -->
+<div class="overlay" id="startModal">
+  <div class="sheet">
+    <h2 id="startTitle">Ø¨Ø¯Ø¡ Ø¬Ù„Ø³Ø© Ø¬Ø¯ÙŠØ¯Ø©</h2>
+
+    <label>Ø§Ù„Ø´Ø§Ø´Ø©</label>
+    <select id="mScreen"></select>
+
+    <label>Ø§Ù„Ù…Ø¯Ø© (Ø¨Ø§Ù„Ø¯Ù‚Ø§Ø¦Ù‚)</label>
+    <input type="number" id="mMinutes" value="60" min="1" inputmode="numeric" oninput="refreshCost()">
+    <div class="chips" id="chips"></div>
+    <div class="costline" id="costLine">Ø§Ù„ØªÙƒÙ„ÙØ©: 0 Ù„.Ø³</div>
+
+    <div class="btns" style="margin-top:18px">
+      <button class="b-ghost" onclick="closeModal('startModal')">Ø¥Ù„ØºØ§Ø¡</button>
+      <button class="b-green" onclick="saveSession()">Ø§Ø¨Ø¯Ø£</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== Edit Modal ===== -->
+<div class="overlay" id="editModal">
+  <div class="sheet">
+    <h2>ØªØ¹Ø¯ÙŠÙ„ <span id="editScreenName"></span></h2>
+
+    <label>Ø§Ù„Ù…Ø¯Ø© Ø§Ù„ÙØ¹Ù„ÙŠØ© (Ø¨Ø§Ù„Ø¯Ù‚Ø§Ø¦Ù‚)</label>
+    <input type="number" id="eMinutes" min="0" inputmode="numeric" oninput="refreshEditCost()">
+    <div class="costline" id="editCostLine">Ø§Ù„ØªÙƒÙ„ÙØ©: 0 Ù„.Ø³</div>
+
+    <label>Ø§Ù„Ù…Ø¯ÙÙˆØ¹ (Ù„.Ø³)</label>
+    <input type="number" id="ePaid" min="0" inputmode="numeric" oninput="refreshEditCost()">
+
+    <div class="due" id="editDiff" style="display:none"></div>
+
+    <div class="btns" style="margin-top:18px">
+      <button class="b-ghost" onclick="closeModal('editModal')">Ø¥Ù„ØºØ§Ø¡</button>
+      <button class="b-green" onclick="saveEdit()">Ø­ÙØ¸ Ø§Ù„ØªØ¹Ø¯ÙŠÙ„</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== Orders Modal ===== --><div class="overlay" id="ordersModal">
+  <div class="sheet">
+    <h2>Ø·Ù„Ø¨Ø§Øª <span id="ordScreenName"></span></h2>
+    <div id="ordList"></div>
+    <button class="b-ghost" style="margin-top:6px" onclick="addOrderRow()">+ Ø¥Ø¶Ø§ÙØ© Ø·Ù„Ø¨</button>
+
+    <div class="total-line" style="margin-top:16px">
+      <span>Ù…Ø¬Ù…ÙˆØ¹ Ø§Ù„Ø·Ù„Ø¨Ø§Øª</span><span id="ordTotal">0</span>
+    </div>
+
+    <div class="btns" style="margin-top:16px">
+      <button class="b-ghost" onclick="closeModal('ordersModal')">Ø¥ØºÙ„Ø§Ù‚</button>
+      <button class="b-green" onclick="saveOrders()">Ø­ÙØ¸</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== Settings Modal ===== -->
+<div class="overlay" id="settingsModal">
+  <div class="sheet">
+    <h2>Ø§Ù„Ø¥Ø¹Ø¯Ø§Ø¯Ø§Øª</h2>
+
+    <label>Ø§Ø³Ù… Ø§Ù„ØµØ§Ù„Ø©</label>
+    <input type="text" id="setBrand">
+
+    <label>Ø¹Ø¯Ø¯ Ø§Ù„Ø´Ø§Ø´Ø§Øª</label>
+    <input type="number" id="setCount" min="1" max="30" inputmode="numeric">
+
+    <label>Ø³Ø¹Ø± Ø§Ù„Ø³Ø§Ø¹Ø© Ø§Ù„ÙˆØ§Ø­Ø¯Ø© (Ù„.Ø³)</label>
+    <input type="number" id="setRate" min="0" inputmode="numeric" oninput="previewRate()">
+    <div class="costline" id="ratePreview">Ø§Ù„Ø±Ø¨Ø¹: 0 Â· Ø§Ù„Ù†Øµ: 0 Â· Ø³Ø§Ø¹Ø© ÙˆÙ†Øµ: 0</div>
+
+    <label>Ø¹Ù†Ø¯ Ø§Ù†ØªÙ‡Ø§Ø¡ Ø§Ù„ÙˆÙ‚Øª</label>
+    <div class="switch" id="setMode">
+      <div class="opt" data-v="sound" onclick="pickOne('setMode',this)">&#128266; ØµÙˆØª</div>
+      <div class="opt" data-v="vibrate" onclick="pickOne('setMode',this)">&#128241; Ø±Ø¬Ù‘Ø©</div>
+      <div class="opt" data-v="both" onclick="pickOne('setMode',this)">Ø§Ù„Ø§Ø«Ù†ÙŠÙ†</div>
+    </div>
+
+    <label>Ø§Ù„Ù†ØºÙ…Ø©</label>
+    <div class="switch" id="setTone">
+      <div class="opt" data-v="1" onclick="pickOne('setTone',this)">Ù†ØºÙ…Ø© 1</div>
+      <div class="opt" data-v="2" onclick="pickOne('setTone',this)">Ù†ØºÙ…Ø© 2</div>
+      <div class="opt" data-v="3" onclick="pickOne('setTone',this)">Ù†ØºÙ…Ø© 3</div>
+    </div>
+    <div class="btns" style="margin-top:10px">
+      <button class="b-blue" onclick="testAlert()">&#128266; ØªØ¬Ø±Ø¨Ø© Ø§Ù„ØªÙ†Ø¨ÙŠÙ‡</button>
+    </div>
+
+    <div class="saved" id="setSaved"></div>
+
+    <div class="btns" style="margin-top:14px">
+      <button class="b-red" onclick="wipeAll()">Ù…Ø³Ø­ ÙƒÙ„ Ø§Ù„Ø¨ÙŠØ§Ù†Ø§Øª</button>
+    </div>
+    <div class="btns" style="margin-top:8px">
+      <button class="b-ghost" onclick="closeModal('settingsModal')">Ø¥ØºÙ„Ø§Ù‚</button>
+      <button class="b-green" onclick="saveSettings()">Ø­ÙØ¸</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ============ Ø§Ù„Ø­Ø§Ù„Ø© ÙˆØ§Ù„ØªØ®Ø²ÙŠÙ† ============ */
+const KEY = "pslounge_v2";
+
+const defaultState = () => ({
+  settings:{ brand:"ØµØ§Ù„Ø© Ø§Ù„Ø¨Ù„Ø§ÙŠØ³ØªÙŠØ´Ù†", count:4, rate:0, mode:"both", tone:"1" },
+  screens:[]
+});
+
+let state = load();
+
+function load(){
+  try{
+    const raw = localStorage.getItem(KEY) || localStorage.getItem("pslounge_v1");
+    if(!raw) return defaultState();
+    const s = JSON.parse(raw);
+    s.settings = Object.assign(defaultState().settings, s.settings||{});
+    if(!Array.isArray(s.screens)) s.screens=[];
+    return s;
+  }catch(e){ return defaultState(); }
+}
+function save(){
+  state._ts = Date.now();
+  localStorage.setItem(KEY, JSON.stringify(state));
+  cloudPublish();
+}
+
+/* ============ Ø§Ù„Ù…Ø²Ø§Ù…Ù†Ø© Ø§Ù„Ø³Ø­Ø§Ø¨ÙŠØ© (ntfy.sh) ============ */
+const CLOUD_TOPIC = "pslounge-f331e57d64d74aa1a13de13c21f52e3f";
+const CLOUD_BASE  = "https://ntfy.sh/";
+let cloudApplying = false;
+let cloudTimer = null;
+
+function setSync(ok, txt){
+  const d = document.getElementById("syncDot");
+  const t = document.getElementById("syncTxt");
+  if(d) d.style.background = ok===true ? "#22c55e" : (ok===false ? "#ef4444" : "#f59e0b");
+  if(t) t.textContent = txt;
+}
+
+function cloudPublish(){
+  if(cloudApplying) return;
+  clearTimeout(cloudTimer);
+  cloudTimer = setTimeout(()=>{
+    try{
+      fetch(CLOUD_BASE + CLOUD_TOPIC, {
+        method:"POST",
+        headers:{ "Content-Type":"text/plain" },
+        body: JSON.stringify(state)
+      }).then(()=>setSync(true,"Ù…ØªØ²Ø§Ù…Ù†"))
+        .catch(()=>setSync(false,"ØºÙŠØ± Ù…ØªØµÙ„"));
+    }catch(e){ setSync(false,"ØºÙŠØ± Ù…ØªØµÙ„"); }
+  }, 700);
+}
+
+function cloudApply(text){
+  let remote;
+  try{ remote = JSON.parse(text); }catch(e){ return; }
+  if(!remote || !remote.settings || !Array.isArray(remote.screens)) return;
+  const localTs = state._ts || 0;
+  const remoteTs = remote._ts || 0;
+  if(remoteTs <= localTs) return;
+  cloudApplying = true;
+  state = remote;
+  state.settings = Object.assign(defaultState().settings, state.settings||{});
+  localStorage.setItem(KEY, JSON.stringify(state));
+  cloudApplying = false;
+  render();
+  setSync(true,"Ù…ØªØ²Ø§Ù…Ù†");
+}
+
+async function cloudPull(){
+  try{
+    const r = await fetch(CLOUD_BASE + CLOUD_TOPIC + "/json?poll=1&since=12h");
+    const txt = await r.text();
+    const lines = txt.trim().split("\n").filter(Boolean);
+    for(let i=lines.length-1;i>=0;i--){
+      try{
+        const ev = JSON.parse(lines[i]);
+        if(ev.event==="message" && ev.message){ cloudApply(ev.message); break; }
+      }catch(e){}
+    }
+    setSync(true,"Ù…ØªØ²Ø§Ù…Ù†");
+  }catch(e){ setSync(false,"ØºÙŠØ± Ù…ØªØµÙ„"); }
+}
+
+function cloudSubscribe(){
+  try{
+    const es = new EventSource(CLOUD_BASE + CLOUD_TOPIC + "/sse?since=30s");
+    es.onopen = ()=> setSync(true,"Ù…ØªØ²Ø§Ù…Ù†");
+    es.onerror = ()=> setSync(false,"ØºÙŠØ± Ù…ØªØµÙ„");
+    es.onmessage = (e)=>{
+      try{
+        const ev = JSON.parse(e.data);
+        if(ev.event==="message" && ev.message) cloudApply(ev.message);
+      }catch(err){}
+    };
+  }catch(e){ setSync(false,"ØºÙŠØ± Ù…ØªØµÙ„"); }
+}
+
+function cloudInit(){
+  setSync(null,"Ø§ØªØµØ§Ù„...");
+  cloudPull().then(()=>cloudSubscribe());
+  setInterval(()=>{ cloudPublish(); }, 120000);
+}
+
+/* ============ Ø£Ø¯ÙˆØ§Øª ============ */
+const $ = id => document.getElementById(id);
+function num(n){ return Number(Number(n||0).toFixed(2)); }
+function fmt(n){
+  const v = num(n);
+  return v.toLocaleString("en-US",{maximumFractionDigits:2});
+}
+const money = n => fmt(n) + " Ù„.Ø³";
+const pad = n => String(n).padStart(2,"0");
+const DURATIONS = [15,30,45,60,90,120,180];
+
+function ensureScreens(){
+  const n = Math.max(1, Math.min(30, parseInt(state.settings.count)||4));
+  const arr = state.screens || [];
+  const out = [];
+  for(let i=0;i<n;i++){
+    out.push(arr[i] || {id:i+1,name:"Ø´Ø§Ø´Ø© "+(i+1),startAt:null,endAt:null,minutes:0,orders:[],paid:0});
+    out[i].id = i+1;
+    if(!out[i].name) out[i].name = "Ø´Ø§Ø´Ø© "+(i+1);
+    if(!out[i].orders) out[i].orders = [];
+  }
+  state.screens = out;
+}
+
+function fmtLeft(ms){
+  if(ms<=0) return "00:00";
+  const t = Math.floor(ms/1000);
+  const h = Math.floor(t/3600), m = Math.floor((t%3600)/60), s = t%60;
+  return h>0 ? h+":"+pad(m)+":"+pad(s) : pad(m)+":"+pad(s);
+}
+function fmtTime(d){ return pad(d.getHours())+":"+pad(d.getMinutes()); }
+
+function ordersTotal(sc){ return (sc.orders||[]).reduce((a,o)=>a+num(o.price),0); }
+function sessionCost(sc){ return num((Number(state.settings.rate||0)/60)*(sc.minutes||0)); }
+function grandTotal(sc){ return num(sessionCost(sc) + ordersTotal(sc)); }
+function dueOf(sc){ return num(grandTotal(sc) - Number(sc.paid||0)); }
+
+/* ============ Ø§Ù„Ø±Ø³Ù… ============ */
+function render(){
+  ensureScreens();
+  const g = $("grid");
+  g.innerHTML = "";
+
+  let busy=0, free=0, unpaid=0;
+
+  state.screens.forEach(sc=>{
+    const running = sc.startAt && sc.endAt;
+    const left = running ? (sc.endAt - Date.now()) : 0;
+    const due = dueOf(sc);
+    let cls="", badge="", badgeCls="free", timerTxt="ÙØ§Ø¶ÙŠØ©", timerCls="free";
+
+    if(running){
+      busy++;
+      if(left<=0){ cls="over"; badge="Ø§Ù†ØªÙ‡Ù‰ Ø§Ù„ÙˆÙ‚Øª"; badgeCls="over"; timerTxt="Ø§Ù†ØªÙ‡Ù‰"; timerCls="over"; }
+      else if(left<=15*60000){ cls="warn"; badge="Ù‚Ø±Ø¨ ÙŠØ®Ù„Øµ"; badgeCls="busy"; timerTxt=fmtLeft(left); timerCls=""; }
+      else{ cls="busy"; badge="Ù…Ø´ØºÙˆÙ„Ø©"; badgeCls="busy"; timerTxt=fmtLeft(left); timerCls=""; }
+    } else {
+      free++;
+      if(sc.minutes>0 && due<=0){ badge="Ù…Ø¯ÙÙˆØ¹"; badgeCls="paid"; }
+    }
+
+    if(due>0) unpaid += due;
+
+    const el = document.createElement("div");
+    el.className = "screen "+cls;
+    el.innerHTML = `
+      <div class="sc-head">
+        <div class="sc-name">${sc.name}</div>
+        <div class="badge ${badgeCls}">${badge}</div>
+      </div>
+      <div class="timer ${timerCls}">${timerTxt}</div>
+      ${ running ? `
+        <div class="row"><span>Ù…Ù†</span><b>${fmtTime(new Date(sc.startAt))}</b></div>
+        <div class="row"><span>Ø¥Ù„Ù‰</span><b>${fmtTime(new Date(sc.endAt))}</b></div>
+        <div class="row"><span>Ø§Ù„Ù…Ø¯Ø©</span><b>${sc.minutes} Ø¯</b></div>
+      ` : (sc.minutes>0 ? `<div class="row"><span>Ø¢Ø®Ø± Ø¬Ù„Ø³Ø©</span><b>${sc.minutes} Ø¯</b></div>` : "") }
+
+      <div class="orders">
+        ${ (sc.orders||[]).length ? (sc.orders.map(o=>`<div class="o"><span>${o.name||"Ø·Ù„Ø¨"}</span><span>${money(o.price)}</span></div>`).join("")) : `<div class="empty">Ù„Ø§ Ø·Ù„Ø¨Ø§Øª</div>` }
+      </div>
+
+      <div class="total-line">
+        <span>Ø§Ù„Ø¥Ø¬Ù…Ø§Ù„ÙŠ</span>
+        <span>${money(grandTotal(sc))}</span>
+      </div>
+      ${ due>0 ? `<div class="due">Ø§Ù„Ù…ØªØ¨Ù‚ÙŠ Ù„Ù„Ø¯ÙØ¹: ${money(due)}</div>` : (grandTotal(sc)>0?`<div class="paid-ok">Ù…Ø¯ÙÙˆØ¹ âœ“</div>`:``) }
+
+      <div class="btns">
+        ${ running ? `
+          <button class="b-orange" onclick="extend(${sc.id},15)">+15 Ø¯</button>
+          <button class="b-blue" onclick="extend(${sc.id},30)">+30 Ø¯</button>
+        ` : `
+          <button class="b-blue" onclick="openStart(${sc.id})">Ø§Ø¨Ø¯Ø£</button>
+        ` }
+        <button class="b-green" onclick="markPaid(${sc.id})">ØªÙ… Ø§Ù„Ø¯ÙØ¹</button>
+      </div>
+      <div class="btns" style="margin-top:6px">
+        <button class="b-ghost" onclick="openEdit(${sc.id})">ØªØ¹Ø¯ÙŠÙ„</button>
+        <button class="b-ghost" onclick="openOrders(${sc.id})">Ø·Ù„Ø¨Ø§Øª</button>
+        <button class="b-ghost" onclick="clearScreen(${sc.id})">ØªÙØ±ÙŠØº</button>
+      </div>
+    `;
+    g.appendChild(el);
+  });
+
+  $("sBusy").textContent = busy;
+  $("sFree").textContent = free;
+  $("sUnpaid").textContent = fmt(unpaid);
+  $("brand").textContent = state.settings.brand;
+  document.title = state.settings.brand;
+  save();
+}
+
+/* ============ Ù†Ø§ÙØ°Ø© Ø¨Ø¯Ø¡ Ø§Ù„Ø¬Ù„Ø³Ø© ============ */
+let editingScreenId = null;
+function openStart(id){
+  editingScreenId = id;
+  const sel = $("mScreen");
+  sel.innerHTML = state.screens.map(s=>`<option value="${s.id}" ${s.id===id?"selected":""}>${s.name}</option>`).join("");
+  $("mMinutes").value = 60;
+  $("startTitle").textContent = id ? "ØªØ¹Ø¯ÙŠÙ„ Ø¬Ù„Ø³Ø©" : "Ø¨Ø¯Ø¡ Ø¬Ù„Ø³Ø© Ø¬Ø¯ÙŠØ¯Ø©";
+  buildChips();
+  refreshCost();
+  openModal("startModal");
+}
+function buildChips(){
+  const rate = Number(state.settings.rate||0);
+  $("chips").innerHTML = DURATIONS.map(m=>{
+    const p = num((rate/60)*m);
+    const label = m===60?"Ø³Ø§Ø¹Ø©":(m===90?"Ø³Ø§Ø¹Ø© ÙˆÙ†Øµ":(m===120?"Ø³Ø§Ø¹ØªÙŠÙ†":(m===180?"3 Ø³Ø§Ø¹Ø§Øª":m+" Ø¯")));
+    return `<div class="chip" data-m="${m}" onclick="pickMin(${m},this)">${label}<span class="p">${fmt(p)}</span></div>`;
+  }).join("");
+}
+function pickMin(m, el){
+  $("mMinutes").value = m;
+  document.querySelectorAll("#chips .chip").forEach(c=>c.classList.remove("on"));
+  if(el) el.classList.add("on");
+  refreshCost();
+}
+function refreshCost(){
+  const m = Math.max(0, parseInt($("mMinutes").value)||0);
+  const p = num((Number(state.settings.rate||0)/60)*m);
+  $("costLine").textContent = "Ø§Ù„ØªÙƒÙ„ÙØ©: " + money(p);
+  document.querySelectorAll("#chips .chip").forEach(c=>{
+    c.classList.toggle("on", parseInt(c.dataset.m)===m);
+  });
+}
+function saveSession(){
+  const id = parseInt($("mScreen").value);
+  const minutes = Math.max(1, parseInt($("mMinutes").value)||60);
+  const sc = state.screens.find(s=>s.id===id);
+  if(!sc) return;
+  const wasPaid = dueOf(sc) <= 0 && grandTotal(sc)>0;
+  sc.minutes = minutes;
+  sc.startAt = Date.now();
+  sc.endAt = Date.now() + minutes*60000;
+  sc.alerted = false;
+  if(!wasPaid) sc.paid = 0;
+  closeModal("startModal");
+  render();
+}
+function extend(id, min){
+  const sc = state.screens.find(s=>s.id===id);
+  if(!sc) return;
+  sc.minutes += min;
+  sc.endAt += min*60000;
+  if(sc.endAt > Date.now()) sc.alerted = false;
+  render();
+}
+
+/* ============ Ø§Ù„Ø¯ÙØ¹ ============ */
+function markPaid(id){
+  const sc = state.screens.find(s=>s.id===id);
+  if(!sc) return;
+  const total = grandTotal(sc);
+  const inp = prompt(`Ø§Ù„Ø´Ø§Ø´Ø©: ${sc.name}\nØ§Ù„Ø¥Ø¬Ù…Ø§Ù„ÙŠ: ${total} Ù„.Ø³\nØ§Ù„Ù…Ø¯ÙÙˆØ¹ Ø³Ø§Ø¨Ù‚Ø§Ù‹: ${sc.paid} Ù„.Ø³\n\nØ§ÙƒØªØ¨ Ø§Ù„Ù…Ø¨Ù„Øº Ø§Ù„Ù…Ø¯ÙÙˆØ¹:`, total);
+  if(inp===null) return;
+  const paid = num(inp);
+  sc.paid = paid;
+  render();
+  if(dueOf(sc)<=0) alert("ØªÙ… Ø§Ù„Ø¯ÙØ¹ âœ“");
+  else alert("Ù…Ø¯ÙÙˆØ¹ Ø¬Ø²Ø¦ÙŠØŒ Ø§Ù„Ù…ØªØ¨Ù‚ÙŠ: " + money(dueOf(sc)));
+}
+
+/* ============ ØªØ¹Ø¯ÙŠÙ„ Ø§Ù„Ø¬Ù„Ø³Ø© ============ */
+let editScreenId=null;
+function openEdit(id){
+  editScreenId=id;
+  const sc = state.screens.find(s=>s.id===id);
+  if(!sc) return;
+  $("editScreenName").textContent = sc.name;
+  $("eMinutes").value = sc.minutes||0;
+  $("ePaid").value = sc.paid||0;
+  refreshEditCost();
+  openModal("editModal");
+}
+function refreshEditCost(){
+  const sc = state.screens.find(s=>s.id===editScreenId);
+  if(!sc) return;
+  const mins = Math.max(0, parseInt($("eMinutes").value)||0);
+  const cost = num((Number(state.settings.rate||0)/60)*mins);
+  const ord = ordersTotal(sc);
+  const total = num(cost+ord);
+  const paid = num($("ePaid").value);
+  $("editCostLine").textContent = "ØªÙƒÙ„ÙØ© Ø§Ù„ÙˆÙ‚Øª: "+fmt(cost)+" + Ø·Ù„Ø¨Ø§Øª: "+fmt(ord)+" = "+money(total);
+  const diff = num(paid - total);
+  const d = $("editDiff");
+  if(diff>0){ d.style.display="block"; d.style.color="var(--green)"; d.textContent="Ø¯ÙØ¹ Ø²Ø§Ø¦Ø¯ (Ø¨ÙŠØ±Ø¬Ø¹ Ù„Ù‡): "+money(diff); }
+  else if(diff<0){ d.style.display="block"; d.style.color="var(--orange)"; d.textContent="Ø§Ù„Ù…ØªØ¨Ù‚ÙŠ Ù„Ù„Ø¯ÙØ¹: "+money(-diff); }
+  else if(total>0){ d.style.display="block"; d.style.color="var(--green)"; d.textContent="Ù…Ø¯ÙÙˆØ¹ Ø¨Ø§Ù„ÙƒØ§Ù…Ù„ âœ“"; }
+  else { d.style.display="none"; }
+}
+function saveEdit(){
+  const sc = state.screens.find(s=>s.id===editScreenId);
+  if(!sc) return;
+  const mins = Math.max(0, parseInt($("eMinutes").value)||0);
+  sc.minutes = mins;
+  sc.paid = num($("ePaid").value);
+  if(sc.startAt) sc.endAt = sc.startAt + mins*60000;
+  closeModal("editModal");
+  render();
+}
+
+function clearScreen(id){
+  const sc = state.screens.find(s=>s.id===id);
+  if(!sc) return;
+  if(!confirm("ØªÙØ±ÙŠØº "+sc.name+" ØŸ")) return;
+  sc.startAt=null; sc.endAt=null; sc.minutes=0; sc.orders=[]; sc.paid=0; sc.alerted=false;
+  render();
+}
+
+/* ============ Ø§Ù„Ø·Ù„Ø¨Ø§Øª ============ */
+let ordersScreenId=null;
+function openOrders(id){
+  ordersScreenId=id;
+  const sc = state.screens.find(s=>s.id===id);
+  $("ordScreenName").textContent = sc.name;
+  const list = $("ordList");
+  list.innerHTML="";
+  (sc.orders||[]).forEach(o=> addOrderRow(o.name,o.price));
+  if(!sc.orders || !sc.orders.length) addOrderRow();
+  updateOrdTotal();
+  openModal("ordersModal");
+}
+function addOrderRow(name="",price=""){
+  const list=$("ordList");
+  const div=document.createElement("div");
+  div.className="ord-row";
+  div.innerHTML=`
+    <input type="text" placeholder="Ø§Ø³Ù… Ø§Ù„Ø·Ù„Ø¨" value="${name||""}" style="flex:2">
+    <input type="number" placeholder="Ø§Ù„Ø³Ø¹Ø±" value="${price||""}" style="flex:1" inputmode="numeric" oninput="updateOrdTotal()">
+    <span style="cursor:pointer;color:var(--red);font-weight:700;padding:0 6px" onclick="this.parentElement.remove();updateOrdTotal()">âœ•</span>
+  `;
+  list.appendChild(div);
+}
+function updateOrdTotal(){
+  let t=0;
+  document.querySelectorAll("#ordList .ord-row").forEach(r=>{
+    t += Number(r.querySelectorAll("input")[1].value||0);
+  });
+  $("ordTotal").textContent = money(t);
+}
+function saveOrders(){
+  const sc = state.screens.find(s=>s.id===ordersScreenId);
+  if(!sc) return;
+  const arr=[];
+  document.querySelectorAll("#ordList .ord-row").forEach(r=>{
+    const ins=r.querySelectorAll("input");
+    if(ins[0].value.trim()||Number(ins[1].value||0)>0)
+      arr.push({name:ins[0].value.trim(), price:num(ins[1].value)});
+  });
+  sc.orders=arr;
+  closeModal("ordersModal");
+  render();
+}
+
+/* ============ Ø§Ù„Ø¥Ø¹Ø¯Ø§Ø¯Ø§Øª ============ */
+function openSettings(){
+  $("setBrand").value = state.settings.brand;
+  $("setCount").value = state.settings.count;
+  $("setRate").value = state.settings.rate;
+  markActive("setMode", state.settings.mode);
+  markActive("setTone", state.settings.tone);
+  previewRate();
+  openModal("settingsModal");
+}
+function previewRate(){
+  const r = Number($("setRate").value||0);
+  const q = num((r/60)*15), h = num((r/60)*30), hh = num((r/60)*90);
+  $("ratePreview").textContent = "Ø§Ù„Ø±Ø¨Ø¹: "+fmt(q)+" Â· Ø§Ù„Ù†Øµ: "+fmt(h)+" Â· Ø³Ø§Ø¹Ø© ÙˆÙ†Øµ: "+fmt(hh);
+}
+function markActive(groupId, val){
+  document.querySelectorAll("#"+groupId+" .opt").forEach(o=>{
+    o.classList.toggle("active", String(o.dataset.v)===String(val));
+  });
+}
+function pickOne(groupId, el){
+  el.parentElement.querySelectorAll(".opt").forEach(o=>o.classList.remove("active"));
+  el.classList.add("active");
+  if(groupId==="setTone"){ state.settings.tone = el.dataset.v; playTone(state.settings.tone); }
+}
+function saveSettings(){
+  state.settings.brand = $("setBrand").value.trim() || "ØµØ§Ù„Ø© Ø§Ù„Ø¨Ù„Ø§ÙŠØ³ØªÙŠØ´Ù†";
+  state.settings.count = Math.max(1, Math.min(30, parseInt($("setCount").value)||4));
+  state.settings.rate = Math.max(0, Number($("setRate").value)||0);
+  const m = document.querySelector("#setMode .opt.active");
+  const t = document.querySelector("#setTone .opt.active");
+  state.settings.mode = m?m.dataset.v:"both";
+  state.settings.tone = t?t.dataset.v:"1";
+  $("setSaved").textContent="ØªÙ… Ø§Ù„Ø­ÙØ¸ âœ“";
+  setTimeout(()=>$("setSaved").textContent="",1500);
+  ensureScreens();
+  render();
+}
+function wipeAll(){
+  if(!confirm("Ø³ÙŠØªÙ… Ù…Ø³Ø­ ÙƒÙ„ Ø§Ù„Ø¨ÙŠØ§Ù†Ø§Øª Ù†Ù‡Ø§Ø¦ÙŠØ§Ù‹. Ù…ØªØ£ÙƒØ¯ØŸ")) return;
+  localStorage.removeItem(KEY);
+  state = defaultState();
+  render();
+}
+
+/* ============ Ø§Ù„ØµÙˆØª ÙˆØ§Ù„Ø±Ø¬Ù‘Ø© ============ */
+let soundEnabled = true;
+function toggleSound(){
+  soundEnabled = !soundEnabled;
+  $("soundBtn").innerHTML = soundEnabled ? "&#128266;" : "&#128263;";
+  $("soundBtn").style.opacity = soundEnabled ? "1" : ".5";
+}
+
+function getCtx(){
+  if(!window._actx){
+    try{ window._actx = new (window.AudioContext||window.webkitAudioContext)(); }catch(e){}
+  }
+  if(window._actx && window._actx.state==="suspended") window._actx.resume();
+  return window._actx;
+}
+function beep(ctx, freq, start, dur, type="sine", vol=0.35){
+  const o=ctx.createOscillator(), g=ctx.createGain();
+  o.type=type; o.frequency.value=freq;
+  o.connect(g); g.connect(ctx.destination);
+  g.gain.setValueAtTime(0, ctx.currentTime+start);
+  g.gain.linearRampToValueAtTime(vol, ctx.currentTime+start+0.03);
+  g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime+start+dur);
+  o.start(ctx.currentTime+start);
+  o.stop(ctx.currentTime+start+dur+0.05);
+}
+function playTone(which){
+  if(!soundEnabled) return;
+  const ctx=getCtx(); if(!ctx) return;
+  which = String(which||"1");
+  if(which==="1"){
+    beep(ctx,880,0,0.25,"sine");
+    beep(ctx,880,0.35,0.25,"sine");
+    beep(ctx,1180,0.7,0.35,"sine");
+  }else if(which==="2"){
+    beep(ctx,600,0,0.15,"square",0.25);
+    beep(ctx,800,0.18,0.15,"square",0.25);
+    beep(ctx,1000,0.36,0.15,"square",0.25);
+    beep(ctx,1200,0.54,0.3,"square",0.25);
+  }else{
+    beep(ctx,740,0,0.4,"triangle",0.4);
+    beep(ctx,990,0.45,0.4,"triangle",0.4);
+    beep(ctx,1480,0.9,0.6,"triangle",0.4);
+  }
+}
+function vibrate(){ if(navigator.vibrate) navigator.vibrate([300,150,300,150,600]); }
+function fireAlert(){
+  const mode = state.settings.mode;
+  if(mode==="sound"||mode==="both") playTone(state.settings.tone);
+  if(mode==="vibrate"||mode==="both") vibrate();
+}
+function testAlert(){ fireAlert(); }
+
+/* ============ Ø§Ù„Ø­Ù„Ù‚Ø© Ø§Ù„Ø²Ù…Ù†ÙŠØ© ============ */
+function tick(){
+  const now=Date.now();
+  $("clock").textContent = fmtTime(new Date());
+  state.screens.forEach(sc=>{
+    if(sc.startAt && sc.endAt && !sc.alerted && now>=sc.endAt){
+      sc.alerted=true;
+      fireAlert();
+    }
+  });
+  render();
+}
+setInterval(tick, 1000);
+
+function openModal(id){ $(id).classList.add("show"); }
+function closeModal(id){ $(id).classList.remove("show"); }
+document.querySelectorAll(".overlay").forEach(ov=>{
+  ov.addEventListener("click", e=>{ if(e.target===ov) ov.classList.remove("show"); });
+});
+
+/* ============ Ø§Ù„Ø¨Ø¯Ø¡ ============ */
+ensureScreens();
+markActive("setMode", state.settings.mode);
+markActive("setTone", state.settings.tone);
+render();
+cloudInit();
+</script>
+</body>
+</html>
