@@ -312,11 +312,14 @@ function save(){
   cloudPublish();
 }
 
-/* ============ المزامنة السحابية (ntfy.sh) ============ */
-const CLOUD_TOPIC = "pslounge-f331e57d64d74aa1a13de13c21f52e3f";
-const CLOUD_BASE  = "https://ntfy.sh/";
+/* ============ قاعدة البيانات السحابية (Supabase) ============ */
+const SB_URL   = "https://xtsumqxirkziawlmttbg.supabase.co";
+const SB_KEY   = "sb_publishable_lRFYcFpwW28NhSyPfxg2AA_RF9ZO7-F";
+const SB_TABLE = "lounge_state";
+const SB_ROW   = "main";
 let cloudApplying = false;
 let cloudTimer = null;
+let cloudBusy = false;
 
 function setSync(ok, txt){
   const d = document.getElementById("syncDot");
@@ -325,25 +328,34 @@ function setSync(ok, txt){
   if(t) t.textContent = txt;
 }
 
+function sbHeaders(extra){
+  const h = { "apikey": SB_KEY, "Authorization": "Bearer " + SB_KEY, "Content-Type": "application/json" };
+  if(extra) Object.assign(h, extra);
+  return h;
+}
+
 function cloudPublish(){
   if(cloudApplying) return;
   clearTimeout(cloudTimer);
-  cloudTimer = setTimeout(()=>{
+  cloudTimer = setTimeout(async ()=>{
+    if(cloudBusy) return;
+    cloudBusy = true;
     try{
-      fetch(CLOUD_BASE + CLOUD_TOPIC, {
+      const r = await fetch(SB_URL + "/rest/v1/" + SB_TABLE + "?on_conflict=id", {
         method:"POST",
-        headers:{ "Content-Type":"text/plain" },
-        body: JSON.stringify(state)
-      }).then(()=>setSync(true,"متزامن"))
-        .catch(()=>setSync(false,"غير متصل"));
+        headers: sbHeaders({ "Prefer":"resolution=merge-duplicates,return=minimal" }),
+        body: JSON.stringify([{ id: SB_ROW, data: state, updated_at: new Date().toISOString() }])
+      });
+      if(r.ok){ setSync(true,"محفوظ على السحابة"); }
+      else if(r.status===404){ setSync(false,"جدول قاعدة البيانات غير موجود"); }
+      else { setSync(false,"تعذّر الحفظ (" + r.status + ")"); }
     }catch(e){ setSync(false,"غير متصل"); }
-  }, 700);
+    cloudBusy = false;
+  }, 500);
 }
 
-function cloudApply(text){
-  let remote;
-  try{ remote = JSON.parse(text); }catch(e){ return; }
-  if(!remote || !remote.settings || !Array.isArray(remote.screens)) return;
+function cloudApply(remote){
+  if(!remote || typeof remote!=="object" || !remote.settings || !Array.isArray(remote.screens)) return;
   const localTs = state._ts || 0;
   const remoteTs = remote._ts || 0;
   if(remoteTs <= localTs) return;
@@ -352,43 +364,34 @@ function cloudApply(text){
   state.settings = Object.assign(defaultState().settings, state.settings||{});
   localStorage.setItem(KEY, JSON.stringify(state));
   cloudApplying = false;
+  if(typeof ensureScreens==="function") ensureScreens();
   render();
   setSync(true,"متزامن");
 }
 
 async function cloudPull(){
   try{
-    const r = await fetch(CLOUD_BASE + CLOUD_TOPIC + "/json?poll=1&since=12h");
-    const txt = await r.text();
-    const lines = txt.trim().split("\n").filter(Boolean);
-    for(let i=lines.length-1;i>=0;i--){
-      try{
-        const ev = JSON.parse(lines[i]);
-        if(ev.event==="message" && ev.message){ cloudApply(ev.message); break; }
-      }catch(e){}
+    const r = await fetch(SB_URL + "/rest/v1/" + SB_TABLE + "?id=eq." + SB_ROW + "&select=data", {
+      headers: sbHeaders()
+    });
+    if(r.status===404){ setSync(false,"جدول قاعدة البيانات غير موجود"); return; }
+    if(!r.ok){ setSync(false,"تعذّر القراءة (" + r.status + ")"); return; }
+    const arr = await r.json();
+    if(Array.isArray(arr) && arr.length && arr[0].data){
+      cloudApply(arr[0].data);
+      setSync(true,"متزامن");
+    }else{
+      cloudPublish();
     }
-    setSync(true,"متزامن");
-  }catch(e){ setSync(false,"غير متصل"); }
-}
-
-function cloudSubscribe(){
-  try{
-    const es = new EventSource(CLOUD_BASE + CLOUD_TOPIC + "/sse?since=30s");
-    es.onopen = ()=> setSync(true,"متزامن");
-    es.onerror = ()=> setSync(false,"غير متصل");
-    es.onmessage = (e)=>{
-      try{
-        const ev = JSON.parse(e.data);
-        if(ev.event==="message" && ev.message) cloudApply(ev.message);
-      }catch(err){}
-    };
   }catch(e){ setSync(false,"غير متصل"); }
 }
 
 function cloudInit(){
   setSync(null,"اتصال...");
-  cloudPull().then(()=>cloudSubscribe());
-  setInterval(()=>{ cloudPublish(); }, 120000);
+  cloudPull();
+  setInterval(()=>{ if(document.visibilityState!=="hidden") cloudPull(); }, 4000);
+  document.addEventListener("visibilitychange", ()=>{ if(document.visibilityState==="visible") cloudPull(); });
+  window.addEventListener("focus", ()=>{ cloudPull(); });
 }
 
 /* ============ أدوات ============ */
