@@ -389,9 +389,6 @@ async function cloudPull(){
 function cloudInit(){
   setSync(null,"اتصال...");
   cloudPull();
-  setInterval(()=>{ if(document.visibilityState!=="hidden") cloudPull(); }, 4000);
-  document.addEventListener("visibilitychange", ()=>{ if(document.visibilityState==="visible") cloudPull(); });
-  window.addEventListener("focus", ()=>{ cloudPull(); });
 }
 
 /* ============ أدوات ============ */
@@ -504,7 +501,6 @@ function render(){
   $("sUnpaid").textContent = fmt(unpaid);
   $("brand").textContent = state.settings.brand;
   document.title = state.settings.brand;
-  save();
 }
 
 /* ============ نافذة بدء الجلسة ============ */
@@ -554,6 +550,7 @@ function saveSession(){
   if(!wasPaid) sc.paid = 0;
   closeModal("startModal");
   render();
+  save();
 }
 function extend(id, min){
   const sc = state.screens.find(s=>s.id===id);
@@ -562,6 +559,7 @@ function extend(id, min){
   sc.endAt += min*60000;
   if(sc.endAt > Date.now()) sc.alerted = false;
   render();
+  save();
 }
 
 /* ============ الدفع ============ */
@@ -574,6 +572,7 @@ function markPaid(id){
   const paid = num(inp);
   sc.paid = paid;
   render();
+  save();
   if(dueOf(sc)<=0) alert("تم الدفع ✓");
   else alert("مدفوع جزئي، المتبقي: " + money(dueOf(sc)));
 }
@@ -615,6 +614,7 @@ function saveEdit(){
   if(sc.startAt) sc.endAt = sc.startAt + mins*60000;
   closeModal("editModal");
   render();
+  save();
 }
 
 function clearScreen(id){
@@ -623,6 +623,7 @@ function clearScreen(id){
   if(!confirm("تفريغ "+sc.name+" ؟")) return;
   sc.startAt=null; sc.endAt=null; sc.minutes=0; sc.orders=[]; sc.paid=0; sc.alerted=false;
   render();
+  save();
 }
 
 /* ============ الطلبات ============ */
@@ -668,6 +669,7 @@ function saveOrders(){
   sc.orders=arr;
   closeModal("ordersModal");
   render();
+  save();
 }
 
 /* ============ الإعدادات ============ */
@@ -707,12 +709,14 @@ function saveSettings(){
   setTimeout(()=>$("setSaved").textContent="",1500);
   ensureScreens();
   render();
+  save();
 }
 function wipeAll(){
   if(!confirm("سيتم مسح كل البيانات نهائياً. متأكد؟")) return;
   localStorage.removeItem(KEY);
   state = defaultState();
   render();
+  save();
 }
 
 /* ============ الصوت والرجّة ============ */
@@ -771,12 +775,15 @@ function testAlert(){ fireAlert(); }
 function tick(){
   const now=Date.now();
   $("clock").textContent = fmtTime(new Date());
+  let changed=false;
   state.screens.forEach(sc=>{
     if(sc.startAt && sc.endAt && !sc.alerted && now>=sc.endAt){
-      sc.alerted=true;
       fireAlert();
+      sc.startAt=null; sc.endAt=null; sc.minutes=0; sc.orders=[]; sc.paid=0; sc.alerted=false;
+      changed=true;
     }
   });
+  if(changed) save();
   render();
 }
 setInterval(tick, 1000);
